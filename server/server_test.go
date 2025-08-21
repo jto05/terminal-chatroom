@@ -1,11 +1,13 @@
-package server
+package server_test
 
 import (
 	"testing"
+
+	"terminal_chatroom/server"
 )
 
 func TestServer(t *testing.T) {
-	server := New(&Config{
+	server := server.New(&server.Config{
 		Host: "localhost",
 		Port: "3333",
 	})
