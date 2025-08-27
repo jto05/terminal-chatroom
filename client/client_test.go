@@ -11,10 +11,10 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	input := strings.NewReader("hello world!\nexit\n")
+	input := strings.NewReader("hello world!\n/exit\n")
 	output := &bytes.Buffer{}
 
-	want := "Enter text:\nYou wrote: hello world!\nYou wrote: exit\ngoodbye!\n"
+	want := "Enter text:\nYou wrote: hello world!\nYou wrote: /exit\ngoodbye!\n"
 
 	c := client.New(&client.Config{
 		Host:   "localhost",
