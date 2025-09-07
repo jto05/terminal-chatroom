@@ -31,10 +31,7 @@ func New(config *Config) (client *Client) {
 	}
 }
 
-// TODO: allow client to send as many requests to the server as they want
 func (c *Client) Run() {
-	sc := bufio.NewScanner(c.input)
-
 	conn, err := net.Dial("tcp", c.host+":"+c.port)
 	if err != nil {
 		fmt.Fprintln(c.output, err)
@@ -42,7 +39,26 @@ func (c *Client) Run() {
 	}
 	defer conn.Close()
 
+	go c.receiveServerData(conn)
+
+	c.readTerminalInput(conn)
+}
+
+func (c *Client) receiveServerData(conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	for {
+		message, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Println("Disconnected from server.")
+		}
+
+		fmt.Printf("From server: %s", message)
+	}
+}
+
+func (c *Client) readTerminalInput(conn net.Conn) {
 	fmt.Fprintln(c.output, "Enter text:")
+	sc := bufio.NewScanner(c.input)
 
 	for sc.Scan() {
 		text := sc.Text()
@@ -57,6 +73,5 @@ func (c *Client) Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
 	}
 }
