@@ -9,10 +9,12 @@ import (
 )
 
 type Client struct {
-	host   string
-	port   string
-	input  io.Reader
-	output io.Writer
+	host string
+	port string
+
+	username string
+	input    io.Reader
+	output   io.Writer
 }
 
 type Config struct {
@@ -24,10 +26,11 @@ type Config struct {
 
 func New(config *Config) (client *Client) {
 	return &Client{
-		host:   config.Host,
-		port:   config.Port,
-		input:  config.Input,
-		output: config.Output,
+		host:     config.Host,
+		port:     config.Port,
+		username: "",
+		input:    config.Input,
+		output:   config.Output,
 	}
 }
 
@@ -39,30 +42,23 @@ func (c *Client) Run() {
 	}
 	defer conn.Close()
 
-	go c.receiveServerData(conn)
-
-	c.readTerminalInput(conn)
-}
-
-func (c *Client) receiveServerData(conn net.Conn) {
-	reader := bufio.NewReader(conn)
-	for {
-		message, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Disconnected from server.")
-		}
-
-		fmt.Printf("From server: %s", message)
-	}
-}
-
-func (c *Client) readTerminalInput(conn net.Conn) {
-	fmt.Fprintln(c.output, "Enter text:")
 	sc := bufio.NewScanner(c.input)
 
+	// change username if wasn't initialized in config
+	if c.username == "" {
+		fmt.Fprintf(c.output, "Enter username: ")
+		if sc.Scan() {
+			c.username = sc.Text()
+		}
+	}
+
+	go c.receiveServerData(conn) // start getting data from server
+
+	//
 	for sc.Scan() {
+		fmt.Fprintf(c.output, "%s : ", c.username)
+
 		text := sc.Text()
-		fmt.Fprintf(c.output, "You wrote: '%s'\n", text)
 
 		if text == "/exit" {
 			fmt.Fprintln(c.output, "goodbye!")
@@ -73,5 +69,17 @@ func (c *Client) readTerminalInput(conn net.Conn) {
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+}
+
+func (c *Client) receiveServerData(conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	for {
+		_, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Fprintln(c.output, "Disconnected from server.")
+		}
+
+		// fmt.Fprintf(c.output, "From server: %s", message)
 	}
 }
