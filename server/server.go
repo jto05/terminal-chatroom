@@ -56,15 +56,18 @@ func (s *Server) Run() {
 		s.clients[conn] = client
 
 		for _, c := range s.clients {
-			go c.handleRequest()
+			go s.handleRequest(c)
 		}
 	}
 }
 
 func (s *Server) broadcast(msg string) {
+	for _, c := range s.clients {
+		c.conn.Write([]byte(msg))
+	}
 }
 
-func (client *Client) handleRequest() {
+func (s *Server) handleRequest(client *Client) {
 	reader := bufio.NewReader(client.conn)
 	for { // loops until connection on Client's until error received or connection closed
 		message, err := reader.ReadString('\n')
@@ -73,8 +76,7 @@ func (client *Client) handleRequest() {
 			client.conn.Close()
 			return
 		}
-
 		fmt.Printf("Message incoming: '%s'", string(message))
-		client.conn.Write([]byte("Message received. \n"))
+		s.broadcast(string(message))
 	}
 }

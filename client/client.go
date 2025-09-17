@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 )
 
 type Client struct {
@@ -77,11 +78,15 @@ func (c *Client) Run() {
 func (c *Client) receiveServerData(conn net.Conn) {
 	reader := bufio.NewReader(conn)
 	for {
-		_, err := reader.ReadString('\n')
+		msg, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Fprintln(c.output, "Disconnected from server.")
 		}
 
-		// fmt.Fprintf(c.output, "From server: %s", message)
+		split_msg := strings.Split(msg, " : ")
+
+		if split_msg[0] != c.username {
+			fmt.Fprintln(c.output, msg)
+		}
 	}
 }
