@@ -8,9 +8,8 @@ import (
 )
 
 type Server struct {
-	host    string
-	port    string
-	clients []Client
+	host string
+	port string
 }
 
 type Client struct {
@@ -29,7 +28,6 @@ func New(config *Config) *Server {
 	}
 }
 
-// TODO: add a server function that allows the server to broadcast a message to all clients
 /*
 Start contains
 */
@@ -53,15 +51,11 @@ func (s *Server) Run() {
 			conn: conn,
 		}
 
-		go client.handleConnections()
+		go client.handleRequest()
 	}
 }
 
-func (s *Server) broadcast(msg string) {
-	fmt.Printf("Broadcasting: %s", msg)
-}
-
-func (client *Client) handleConnections() {
+func (client *Client) handleRequest() {
 	reader := bufio.NewReader(client.conn)
 	for { // loops until connection on Client's until error received or connection closed
 		message, err := reader.ReadString('\n')
@@ -72,10 +66,6 @@ func (client *Client) handleConnections() {
 		}
 
 		fmt.Printf("Message incoming: %s", string(message))
-		to_write := "Message received. \n"
-		_, err = client.conn.Write([]byte(to_write))
-		if err != nil {
-			fmt.Println(err)
-		}
+		client.conn.Write([]byte("Message received. \n"))
 	}
 }
