@@ -8,8 +8,9 @@ import (
 )
 
 type Server struct {
-	host string
-	port string
+	host    string
+	port    string
+	clients map[net.Conn]*Client
 }
 
 type Client struct {
@@ -23,8 +24,9 @@ type Config struct {
 
 func New(config *Config) *Server {
 	return &Server{
-		host: config.Host,
-		port: config.Port,
+		host:    config.Host,
+		port:    config.Port,
+		clients: make(map[net.Conn]*Client),
 	}
 }
 
@@ -51,8 +53,15 @@ func (s *Server) Run() {
 			conn: conn,
 		}
 
-		go client.handleRequest()
+		s.clients[conn] = client
+
+		for _, c := range s.clients {
+			go c.handleRequest()
+		}
 	}
+}
+
+func (s *Server) broadcast(msg string) {
 }
 
 func (client *Client) handleRequest() {
@@ -65,7 +74,7 @@ func (client *Client) handleRequest() {
 			return
 		}
 
-		fmt.Printf("Message incoming: %s", string(message))
+		fmt.Printf("Message incoming: '%s'", string(message))
 		client.conn.Write([]byte("Message received. \n"))
 	}
 }

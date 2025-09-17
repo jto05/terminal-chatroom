@@ -65,7 +65,9 @@ func (c *Client) Run() {
 			break
 		}
 
-		_, err := conn.Write([]byte(text + "\n"))
+		msg := c.username + " : " + text
+
+		_, err := conn.Write([]byte(msg + "\n"))
 		if err != nil {
 			log.Fatal(err)
 		}
