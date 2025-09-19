@@ -13,9 +13,10 @@ type Client struct {
 	host string
 	port string
 
-	username string
-	input    io.Reader
-	output   io.Writer
+	username          string
+	last_printed_line string
+	input             io.Reader
+	output            io.Writer
 }
 
 type Config struct {
@@ -45,28 +46,32 @@ func (c *Client) Run() {
 
 	sc := bufio.NewScanner(c.input)
 
+	fmt.Fprintln(c.output, "Hello!")
+
 	// change username if wasn't initialized in config
-	if c.username == "" {
-		fmt.Fprintf(c.output, "Enter username: ")
-		if sc.Scan() {
-			c.username = sc.Text()
-		}
-	}
 
 	go c.receiveServerData(conn) // start getting data from server
 
-	//
 	for sc.Scan() {
-		fmt.Fprintf(c.output, "%s : ", c.username)
+		if c.username == "" {
+			fmt.Fprintf(c.output, "Enter username: ")
+			c.username = sc.Text()
+		}
+		if c.last_printed_line != (c.username + " : ") {
+			fmt.Fprintf(c.output, "%s : ", c.username)
+			c.last_printed_line = c.username + " : "
+		}
+		line := sc.Text()
 
-		text := sc.Text()
+		line = strings.TrimSpace(line)
 
-		if text == "/exit" {
+		if line == "/exit" {
 			fmt.Fprintln(c.output, "goodbye!")
 			break
 		}
 
-		msg := c.username + " : " + text
+		msg := c.username + " : " + line
+		c.last_printed_line = msg
 
 		_, err := conn.Write([]byte(msg + "\n"))
 		if err != nil {
@@ -82,11 +87,15 @@ func (c *Client) receiveServerData(conn net.Conn) {
 		if err != nil {
 			fmt.Fprintln(c.output, "Disconnected from server.")
 		}
+		msg = strings.TrimSpace(msg)
 
 		split_msg := strings.Split(msg, " : ")
 
-		if split_msg[0] != c.username {
-			fmt.Fprintln(c.output, msg)
+		if split_msg[0] != c.username { // only print if the message written was NOT made from user
+			// i need to make it so this message is overrites if prev line was "username : "
+			fmt.Fprint(c.output, "\r"+msg+"\n")
+			fmt.Fprint(c.output, c.username+" : ")
+			c.last_printed_line = c.username + " : "
 		}
 	}
 }
