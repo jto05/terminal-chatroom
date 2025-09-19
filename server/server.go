@@ -55,9 +55,7 @@ func (s *Server) Run() {
 
 		s.clients[conn] = client
 
-		for _, c := range s.clients {
-			go s.handleRequest(c)
-		}
+		go s.handleRequest(client)
 	}
 }
 

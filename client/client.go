@@ -49,17 +49,18 @@ func (c *Client) Run() {
 	fmt.Fprintln(c.output, "Hello!")
 
 	// change username if wasn't initialized in config
+	if c.username == "" {
+		if sc.Scan() {
+			c.username = strings.TrimSpace(sc.Text())
+		}
+	}
 
 	go c.receiveServerData(conn) // start getting data from server
 
-	for sc.Scan() {
-		if c.username == "" {
-			fmt.Fprintf(c.output, "Enter username: ")
-			c.username = sc.Text()
-		}
-		if c.last_printed_line != (c.username + " : ") {
-			fmt.Fprintf(c.output, "%s : ", c.username)
-			c.last_printed_line = c.username + " : "
+	for {
+		fmt.Fprintf(c.output, "%s : ", c.username)
+		if !sc.Scan() {
+			break
 		}
 		line := sc.Text()
 
@@ -91,11 +92,18 @@ func (c *Client) receiveServerData(conn net.Conn) {
 
 		split_msg := strings.Split(msg, " : ")
 
+		if msg == "" {
+			continue
+		}
+
 		if split_msg[0] != c.username { // only print if the message written was NOT made from user
-			// i need to make it so this message is overrites if prev line was "username : "
-			fmt.Fprint(c.output, "\r"+msg+"\n")
-			fmt.Fprint(c.output, c.username+" : ")
+
+			// clear current input line, print message, then reprint prompt
+			fmt.Fprint(c.output, "\r\033[K")           // clear line
+			fmt.Fprintln(c.output, msg)                // the incoming message
+			fmt.Fprintf(c.output, "%s : ", c.username) // prompt
 			c.last_printed_line = c.username + " : "
+
 		}
 	}
 }
